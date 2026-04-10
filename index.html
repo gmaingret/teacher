@@ -454,8 +454,6 @@ function startSession() {
 })();
 
 // ===== SPEECH RECOGNITION =====
-let micStream = null; // keep the stream alive to avoid repeated permission prompts
-
 function initSpeechRecognition() {
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SpeechRecognition) {
@@ -463,18 +461,8 @@ function initSpeechRecognition() {
     document.getElementById('toggleTextBtn').click();
     return;
   }
-
-  // Request mic permission ONCE and keep the stream open for the whole session
-  navigator.mediaDevices.getUserMedia({ audio: true })
-    .then(stream => {
-      micStream = stream; // keep alive — prevents repeated permission prompts
-      buildRecognition(SpeechRecognition);
-      setStatus('Press the button and speak', false);
-    })
-    .catch(err => {
-      setStatus('⚠️ Microphone access denied — check browser permissions', false);
-      buildRecognition(SpeechRecognition); // still try, may work
-    });
+  buildRecognition(SpeechRecognition);
+  setStatus('Press the button and speak', false);
 }
 
 function buildRecognition(SpeechRecognition) {
