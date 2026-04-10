@@ -199,7 +199,7 @@ input,textarea,select{font:inherit;color:inherit}
       <div class="hint">Used directly in your browser. Never stored anywhere.</div>
       <label style="display:flex;align-items:center;gap:8px;margin-top:10px;font-size:var(--text-xs);color:var(--color-text-muted);cursor:pointer">
         <input type="checkbox" id="rememberKey" style="width:15px;height:15px;accent-color:var(--color-primary)">
-        Remember my key in this browser (localStorage)
+        Remember my key in this browser
       </label>
     </div>
     <div class="form-group">
@@ -399,7 +399,6 @@ function systemPrompt() {
 LANGUAGE RULES:
 - Always reply in Russian. Complexity level: ${levelMap[level]}
 - Keep reply concise: 2–4 sentences for conversation, a bit more for explanations.
-- The user may mix English and Russian in the same sentence (e.g. "what does свободное время mean?"). Always understand both and respond accordingly.
 - After your Russian reply, output a JSON block wrapped in <analysis> tags like this:
 
 <analysis>
@@ -443,22 +442,19 @@ function startSession() {
   loadVoices();
 }
 
-// Auto-load saved key + prefs on page open
 (function loadSaved() {
   try {
     const saved = localStorage.getItem('ru_partner_apikey');
     const savedLevel = localStorage.getItem('ru_partner_level');
     const savedModel = localStorage.getItem('ru_partner_model');
-    if (saved) {
-      document.getElementById('apiKeyInput').value = saved;
-      document.getElementById('rememberKey').checked = true;
-    }
+    if (saved) { document.getElementById('apiKeyInput').value = saved; document.getElementById('rememberKey').checked = true; }
     if (savedLevel) document.getElementById('levelSelect').value = savedLevel;
     if (savedModel) document.getElementById('modelSelect').value = savedModel;
   } catch(e) {}
 })();
 
 // ===== SPEECH RECOGNITION =====
+let micStream = null; // keep the stream alive to avoid repeated permission prompts
 
 function initSpeechRecognition() {
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -468,18 +464,16 @@ function initSpeechRecognition() {
     return;
   }
 
-  // Ask for mic permission once via getUserMedia, then immediately release the stream.
-  // This registers the permission with the browser so SpeechRecognition.start()
-  // won't prompt again during the same session.
+  // Request mic permission ONCE and keep the stream open for the whole session
   navigator.mediaDevices.getUserMedia({ audio: true })
     .then(stream => {
-      stream.getTracks().forEach(t => t.stop()); // release immediately — just needed the permission grant
+      micStream = stream; // keep alive — prevents repeated permission prompts
       buildRecognition(SpeechRecognition);
       setStatus('Press the button and speak', false);
     })
-    .catch(() => {
+    .catch(err => {
       setStatus('⚠️ Microphone access denied — check browser permissions', false);
-      buildRecognition(SpeechRecognition);
+      buildRecognition(SpeechRecognition); // still try, may work
     });
 }
 
@@ -815,13 +809,9 @@ function clearConvo() {
   toggleSettings();
 }
 function changeKey() {
-  // Pre-fill with saved key so user can see/edit it
   try {
     const saved = localStorage.getItem('ru_partner_apikey');
-    if (saved) {
-      document.getElementById('apiKeyInput').value = saved;
-      document.getElementById('rememberKey').checked = true;
-    }
+    if (saved) { document.getElementById('apiKeyInput').value = saved; document.getElementById('rememberKey').checked = true; }
   } catch(e) {}
   document.getElementById('setupOverlay').style.display = 'flex';
   toggleSettings();
