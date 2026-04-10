@@ -399,7 +399,7 @@ function systemPrompt() {
 LANGUAGE RULES:
 - Always reply in Russian. Complexity level: ${levelMap[level]}
 - Keep reply concise: 2–4 sentences for conversation, a bit more for explanations.
-- The user may send mixed English+Russian messages (e.g. "What does свободное время mean?"). Always understand both languages and reply in Russian with English explanations as needed.
+- The user may mix English and Russian in the same sentence (e.g. "what does свободное время mean?"). Always understand both and respond accordingly.
 - After your Russian reply, output a JSON block wrapped in <analysis> tags like this:
 
 <analysis>
@@ -475,12 +475,7 @@ function initSpeechRecognition() {
     .then(stream => {
       stream.getTracks().forEach(t => t.stop()); // release immediately — just needed the permission grant
       buildRecognition(SpeechRecognition);
-      // Warn if opened from file:// — permissions won't persist
-    if (location.protocol === 'file:') {
-      setStatus('⚠️ Open via localhost for best mic experience (see launcher scripts)', false);
-    } else {
       setStatus('Press the button and speak', false);
-    }
     })
     .catch(() => {
       setStatus('⚠️ Microphone access denied — check browser permissions', false);
@@ -490,7 +485,7 @@ function initSpeechRecognition() {
 
 function buildRecognition(SpeechRecognition) {
   recognition = new SpeechRecognition();
-  recognition.lang = 'en-US'; // en-US handles mixed Russian+English speech better than ru-RU
+  recognition.lang = 'ru-RU';
   recognition.continuous = false;
   recognition.interimResults = false;
   recognition.maxAlternatives = 1;
